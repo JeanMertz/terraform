@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform/helper/multierror"
 
 	"github.com/awslabs/aws-sdk-go/aws"
+	"github.com/awslabs/aws-sdk-go/aws/credentials"
 	"github.com/awslabs/aws-sdk-go/service/autoscaling"
 	"github.com/awslabs/aws-sdk-go/service/ec2"
 	"github.com/awslabs/aws-sdk-go/service/elasticache"
@@ -19,10 +20,11 @@ import (
 )
 
 type Config struct {
-	AccessKey string
-	SecretKey string
-	Token     string
-	Region    string
+	AccessKey  string
+	SecretKey  string
+	Token      string
+	Region     string
+	MaxRetries int
 
 	AllowedAccountIds   []interface{}
 	ForbiddenAccountIds []interface{}
@@ -60,10 +62,20 @@ func (c *Config) Client() (interface{}, error) {
 		client.region = c.Region
 
 		log.Println("[INFO] Building AWS auth structure")
-		creds := aws.DetectCreds(c.AccessKey, c.SecretKey, c.Token)
+		creds := credentials.NewChainCredentials([]credentials.Provider{
+			&credentials.StaticProvider{Value: credentials.Value{
+				AccessKeyID:     c.AccessKey,
+				SecretAccessKey: c.SecretKey,
+				SessionToken:    c.Token,
+			}},
+			&credentials.EnvProvider{},
+			&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
+			&credentials.EC2RoleProvider{},
+		})
 		awsConfig := &aws.Config{
 			Credentials: creds,
 			Region:      c.Region,
+			MaxRetries:  c.MaxRetries,
 		}
 
 		log.Println("[INFO] Initializing ELB connection")
@@ -96,6 +108,7 @@ func (c *Config) Client() (interface{}, error) {
 		client.r53conn = route53.New(&aws.Config{
 			Credentials: creds,
 			Region:      "us-east-1",
+			MaxRetries:  c.MaxRetries,
 		})
 
 		log.Println("[INFO] Initializing Elasticache Connection")

@@ -34,6 +34,7 @@ func resourceAwsEip() *schema.Resource {
 			"network_interface": &schema.Schema{
 				Type:          schema.TypeString,
 				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"instance"},
 			},
 
@@ -142,8 +143,12 @@ func resourceAwsEipRead(d *schema.ResourceData, meta interface{}) error {
 	address := describeAddresses.Addresses[0]
 
 	d.Set("association_id", address.AssociationID)
-	d.Set("instance", address.InstanceID)
-	d.Set("network_interface", address.NetworkInterfaceID)
+	if address.InstanceID != nil {
+		d.Set("instance", address.InstanceID)
+	}
+	if address.NetworkInterfaceID != nil {
+		d.Set("network_interface", address.NetworkInterfaceID)
+	}
 	d.Set("private_ip", address.PrivateIPAddress)
 	d.Set("public_ip", address.PublicIP)
 
@@ -180,6 +185,10 @@ func resourceAwsEipUpdate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[DEBUG] EIP associate configuration: %#v (domain: %v)", assocOpts, domain)
 		_, err := ec2conn.AssociateAddress(assocOpts)
 		if err != nil {
+			// Prevent saving instance if association failed
+			// e.g. missing internet gateway in VPC
+			d.Set("instance", "")
+			d.Set("network_interface", "")
 			return fmt.Errorf("Failure associating EIP: %s", err)
 		}
 	}

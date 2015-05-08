@@ -9,7 +9,6 @@ import (
 	"github.com/awslabs/aws-sdk-go/service/iam"
 	"github.com/awslabs/aws-sdk-go/service/rds"
 
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -132,18 +131,14 @@ func resourceAwsDbInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set: func(v interface{}) int {
-					return hashcode.String(v.(string))
-				},
+				Set:      schema.HashString,
 			},
 
 			"security_group_names": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set: func(v interface{}) int {
-					return hashcode.String(v.(string))
-				},
+				Set:      schema.HashString,
 			},
 
 			"final_snapshot_identifier": &schema.Schema{
@@ -300,7 +295,7 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceAwsDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
-	v, err := resourceAwsBbInstanceRetrieve(d, meta)
+	v, err := resourceAwsDbInstanceRetrieve(d, meta)
 
 	if err != nil {
 		return err
@@ -372,9 +367,7 @@ func resourceAwsDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
 
 	// Create an empty schema.Set to hold all vpc security group ids
 	ids := &schema.Set{
-		F: func(v interface{}) int {
-			return hashcode.String(v.(string))
-		},
+		F: schema.HashString,
 	}
 	for _, v := range v.VPCSecurityGroups {
 		ids.Add(*v.VPCSecurityGroupID)
@@ -383,9 +376,7 @@ func resourceAwsDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
 
 	// Create an empty schema.Set to hold all security group names
 	sgn := &schema.Set{
-		F: func(v interface{}) int {
-			return hashcode.String(v.(string))
-		},
+		F: schema.HashString,
 	}
 	for _, v := range v.DBSecurityGroups {
 		sgn.Add(*v.DBSecurityGroupName)
@@ -525,7 +516,7 @@ func resourceAwsDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error
 	return resourceAwsDbInstanceRead(d, meta)
 }
 
-func resourceAwsBbInstanceRetrieve(
+func resourceAwsDbInstanceRetrieve(
 	d *schema.ResourceData, meta interface{}) (*rds.DBInstance, error) {
 	conn := meta.(*AWSClient).rdsconn
 
@@ -558,7 +549,7 @@ func resourceAwsBbInstanceRetrieve(
 func resourceAwsDbInstanceStateRefreshFunc(
 	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		v, err := resourceAwsBbInstanceRetrieve(d, meta)
+		v, err := resourceAwsDbInstanceRetrieve(d, meta)
 
 		if err != nil {
 			log.Printf("Error on retrieving DB Instance when waiting: %s", err)

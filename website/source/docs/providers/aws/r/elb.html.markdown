@@ -72,7 +72,7 @@ determines if the ELB exists in a VPC or in EC2-classic.
 Listeners support the following:
 
 * `instance_port` - (Required) The port on the instance to route to
-* `instance_protocol` - (Required) The the protocol to use to the instance.
+* `instance_protocol` - (Required) The protocol to use to the instance.
 * `lb_port` - (Required) The port to listen on for the load balancer
 * `lb_protocol` - (Required) The protocol to listen on.
 * `ssl_certificate_id` - (Optional) The id of an SSL certificate you have uploaded to AWS IAM.
@@ -96,3 +96,4 @@ The following attributes are exported:
 * `source_security_group` - The name of the security group that you can use as
   part of your inbound rules for your load balancer's back-end application
   instances.
+* `zone_id` - The canonical hosted zone ID of the ELB (to be used in a Route 53 Alias record)
