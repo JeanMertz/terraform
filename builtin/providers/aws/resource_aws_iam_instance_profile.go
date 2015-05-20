@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/awslabs/aws-sdk-go/aws"
 	"github.com/awslabs/aws-sdk-go/service/iam"
@@ -123,6 +124,8 @@ func instanceProfileSetRoles(d *schema.ResourceData, iamconn *iam.IAM) error {
 	}
 
 	d.Partial(false)
+
+	time.Sleep(10 * time.Second)
 
 	return nil
 }
